@@ -45,10 +45,20 @@ function maybe_redirect_404_links() {
 	$posts = get_posts( $query );
 
 	// If we didn't find a post, check the network.
+	$blog_id = get_current_blog_id();
 	if ( empty( $posts ) ) {
-		$network_query = new WP_Network_Query($query);
-		$posts = $network_query->posts;
+		$sites = get_sites(array(
+			'site__not_in' => array($blog_id)
+		));
+		foreach($sites as $site) {
+			switch_to_blog($site->blog_id);
+			$posts = get_posts($query);
+			if(!empty($posts)) {
+				break;
+			}
+		}
 		if(empty($posts)) {
+			switch_to_blog($blog_id);
 			return;
 		}
 	}
@@ -56,7 +66,9 @@ function maybe_redirect_404_links() {
 	$post = array_shift( $posts );
 
 	// Redirect to the post's actual link
-	wp_safe_redirect( get_permalink( $post->ID ), 301 );
+	$permalink = get_permalink( $post->ID );
+	switch_to_blog($blog_id);
+	wp_redirect( $permalink, 301 );
 	exit;
 }
 
