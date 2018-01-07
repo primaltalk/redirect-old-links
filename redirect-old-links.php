@@ -37,16 +37,20 @@ function maybe_redirect_404_links() {
 
 	// Find the post that has the matching slug
 	$post_name = array_pop( $request_parts );
-
-	$posts = get_posts( array(
+	$query = array(
 		'name'           => $post_name,
 		'post_type'      => 'any',
 		'posts_per_page' => 1,
-		) );
+	);
+	$posts = get_posts( $query );
 
-	// If we didn't find a post, abort
+	// If we didn't find a post, check the network.
 	if ( empty( $posts ) ) {
-		return;
+		$network_query = new WP_Network_Query($query);
+		$posts = $network_query->posts;
+		if(empty($posts)) {
+			return;
+		}
 	}
 
 	$post = array_shift( $posts );
